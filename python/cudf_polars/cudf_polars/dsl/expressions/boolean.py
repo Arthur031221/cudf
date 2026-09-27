@@ -367,7 +367,9 @@ class BooleanFunction(Expr):
                     values.size,
                     stream=df.stream,
                 )
-                out = base.with_mask(values.obj.null_mask(), values.null_count)
+                out = base.with_mask(
+                    values.copy_null_mask(df.stream), values.null_count
+                )
                 return Column(out, dtype=self.dtype)
             to_search = [-float("inf"), float("inf")]
             if is_finite:
@@ -384,7 +386,7 @@ class BooleanFunction(Expr):
                     result, plc.unary.UnaryOperator.NOT, stream=df.stream
                 )
             return Column(
-                result.with_mask(values.obj.null_mask(), values.null_count),
+                result.with_mask(values.copy_null_mask(df.stream), values.null_count),
                 dtype=self.dtype,
             )
         columns = [child.evaluate(df, context=context) for child in self.children]
@@ -453,7 +455,7 @@ class BooleanFunction(Expr):
                     column.size,
                     stream=df.stream,
                 )
-            out = base.with_mask(column.obj.null_mask(), column.null_count)
+            out = base.with_mask(column.copy_null_mask(df.stream), column.null_count)
             return Column(out, dtype=self.dtype)
         elif self.name is BooleanFunction.Name.IsFirstDistinct:
             (column,) = columns
@@ -565,7 +567,7 @@ class BooleanFunction(Expr):
                 needles.size,
                 stream=df.stream,
             )
-            out = base.with_mask(needles.obj.null_mask(), needles.null_count)
+            out = base.with_mask(needles.copy_null_mask(df.stream), needles.null_count)
             return Column(out, dtype=self.dtype)
         elif self.name is BooleanFunction.Name.IsSorted:
             (column,) = columns

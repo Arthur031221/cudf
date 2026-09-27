@@ -500,10 +500,9 @@ class StringFunction(Expr):
                     column.size,
                     stream=df.stream,
                 )
-                if column.obj.null_mask():
-                    result = result.with_mask(
-                        column.obj.null_mask(), column.obj.null_count()
-                    )
+                result = result.with_mask(
+                    column.copy_null_mask(df.stream), column.null_count
+                )
                 return Column(result, dtype=self.dtype)
             else:
                 return Column(
@@ -580,9 +579,10 @@ class StringFunction(Expr):
         elif self.name is StringFunction.Name.Find:
             literal, _ = self.options
             (child, expr) = self.children
-            plc_column = child.evaluate(df, context=context).obj
-            input_null_mask = plc_column.null_mask()
-            input_null_count = plc_column.null_count()
+            column = child.evaluate(df, context=context)
+            plc_column = column.obj
+            input_null_mask = column.copy_null_mask(df.stream)
+            input_null_count = column.null_count
             if literal:
                 assert isinstance(expr, Literal)
                 plc_column = plc.strings.find.find(
@@ -1008,10 +1008,9 @@ class StringFunction(Expr):
                     column.size,
                     stream=df.stream,
                 )
-                if column.obj.null_mask():
-                    result = result.with_mask(
-                        column.obj.null_mask(), column.obj.null_count()
-                    )
+                result = result.with_mask(
+                    column.copy_null_mask(df.stream), column.null_count
+                )
                 return Column(result, self.dtype)
 
             if self.name is StringFunction.Name.Tail:

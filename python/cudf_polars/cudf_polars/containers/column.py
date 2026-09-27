@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
     from polars import Series as pl_Series
 
+    from rmm.pylibrmm.device_buffer import DeviceBuffer
     from rmm.pylibrmm.stream import Stream
 
     from cudf_polars.typing import (
@@ -483,13 +484,12 @@ class Column:
                 raise InvalidOperationError(
                     f"Conversion from {self.dtype.id()} to {dtype.id()} failed."
                 )
-            else:
-                values = self.obj.with_mask(
-                    *plc.transform.bools_to_mask(castable, stream=stream)
-                )
-        else:
-            values = self.obj
-        return type_caster(values, dtype, stream=stream)
+            # Mask the cast result rather than self.obj: castable starts at
+            # bit 0, while self.obj may be a slice with a nonzero offset.
+            return type_caster(self.obj, dtype, stream=stream).with_mask(
+                *plc.transform.bools_to_mask(castable, stream=stream)
+            )
+        return type_caster(self.obj, dtype, stream=stream)
 
     def copy_metadata(self, from_: pl_Series, /) -> Self:
         """
@@ -624,6 +624,29 @@ class Column:
     def null_count(self) -> int:
         """Return the number of Null values in the column."""
         return self.obj.null_count()
+
+    def copy_null_mask(self, stream: Stream) -> DeviceBuffer | None:
+        """
+        Copy the null mask of the column's rows.
+
+        ``self.obj.null_mask()`` is the mask of the whole buffer, so it does
+        not line up with a new column when ``self`` is a slice with a nonzero
+        offset. The copy starts at the column's first row.
+
+        Parameters
+        ----------
+        stream
+            CUDA stream used for device memory operations and kernel launches.
+            ``self.obj`` must be valid on this stream, and the result will be
+            valid on this stream.
+
+        Returns
+        -------
+        The copied null mask, or None if the column has no nulls.
+        """
+        if self.null_count == 0:
+            return None
+        return plc.null_mask.copy_bitmask(self.obj, stream=stream)
 
     def slice(self, zlice: Slice | None, stream: Stream) -> Self:
         """
