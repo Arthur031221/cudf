@@ -105,7 +105,7 @@ done
 
 # SQLAlchemy 2.1 warns about URI parameters used by the Polars 1.44 Iceberg
 # tests. Polars fixed this in https://github.com/pola-rs/polars/pull/29533.
-SQLALCHEMY_SQLITE_URI_WARNING="ignore:Query string argument\(s\) 'cache', 'mode' are not accepted by the pysqlite driver and are being ignored; SQLite URI arguments require that 'uri=true' also be present in the URL.:sqlalchemy.exc.SAWarning"
+SQLALCHEMY_SQLITE_URI_WARNING="ignore:Query string argument(s) 'cache', 'mode' are not accepted by the pysqlite driver and are being ignored; SQLite URI arguments require that 'uri=true' also be present in the URL.:sqlalchemy.exc.SAWarning"
 
 # Fail fast (-x) rather than trying to continue because failed tests pollute the state
 if [[ "${ENGINE}" == "both" || "${ENGINE}" == "in-memory" ]]; then
